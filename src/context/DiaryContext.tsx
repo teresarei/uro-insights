@@ -21,6 +21,8 @@ interface DiaryContextType {
   importData: (entries: DiaryEntry[]) => void;
   getStats: () => DiaryStats;
   clearData: () => void;
+  getEntriesLast48Hours: () => DiaryEntry[];
+  getVoidsPer24Hours: () => number;
 }
 
 const DiaryContext = createContext<DiaryContextType | undefined>(undefined);
@@ -202,10 +204,38 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
     setEntries([]);
   };
 
+  const getEntriesLast48Hours = (): DiaryEntry[] => {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    
+    return entries.filter(entry => {
+      // Check if any event in this entry is within 48 hours
+      const hasRecentVoid = entry.voids.some(v => v.timestamp >= cutoff);
+      const hasRecentIntake = entry.intakes.some(i => i.timestamp >= cutoff);
+      const hasRecentLeakage = entry.leakages.some(l => l.timestamp >= cutoff);
+      return hasRecentVoid || hasRecentIntake || hasRecentLeakage;
+    }).map(entry => ({
+      ...entry,
+      voids: entry.voids.filter(v => v.timestamp >= cutoff),
+      intakes: entry.intakes.filter(i => i.timestamp >= cutoff),
+      leakages: entry.leakages.filter(l => l.timestamp >= cutoff),
+    }));
+  };
+
+  const getVoidsPer24Hours = (): number => {
+    const now = new Date();
+    const cutoff24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    const voidsIn24h = entries.flatMap(e => e.voids).filter(v => v.timestamp >= cutoff24h);
+    return voidsIn24h.length;
+  };
+
   const getStats = (): DiaryStats => {
-    const allVoids = entries.flatMap(e => e.voids);
-    const allLeakages = entries.flatMap(e => e.leakages);
-    const allIntakes = entries.flatMap(e => e.intakes);
+    // Use 48-hour filtered data for stats
+    const recentEntries = getEntriesLast48Hours();
+    const allVoids = recentEntries.flatMap(e => e.voids);
+    const allLeakages = recentEntries.flatMap(e => e.leakages);
+    const allIntakes = recentEntries.flatMap(e => e.intakes);
     
     const volumes = allVoids.map(v => v.volume);
     const sortedVolumes = [...volumes].sort((a, b) => a - b);
@@ -224,7 +254,13 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
       return hour < 7 || hour >= 23;
     }).length;
     
-    const dayCount = entries.length || 1;
+    // Calculate time span for accurate per-day averages (max 2 days)
+    const hoursCovered = Math.min(48, 
+      allVoids.length > 0 || allIntakes.length > 0 || allLeakages.length > 0 
+        ? 48 
+        : 0
+    );
+    const dayCount = hoursCovered / 24 || 1;
     
     return {
       totalVoids: allVoids.length,
@@ -232,7 +268,7 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
       totalIntake: allIntakes.reduce((sum, i) => sum + i.volume, 0),
       medianVolume,
       maxVolume: Math.max(...volumes, 0),
-      minVolume: Math.min(...volumes, 0),
+      minVolume: volumes.length > 0 ? Math.min(...volumes) : 0,
       avgVoidsPerDay: Math.round(allVoids.length / dayCount * 10) / 10,
       avgLeakagesPerDay: Math.round(allLeakages.length / dayCount * 10) / 10,
       dayVoids,
@@ -253,6 +289,8 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
       importData,
       getStats,
       clearData,
+      getEntriesLast48Hours,
+      getVoidsPer24Hours,
     }}>
       {children}
     </DiaryContext.Provider>
