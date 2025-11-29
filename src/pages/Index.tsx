@@ -4,6 +4,7 @@ import { Dashboard } from '@/components/urotracker/Dashboard';
 import { EntryForm } from '@/components/urotracker/EntryForm';
 import { ClinicalInsights } from '@/components/urotracker/ClinicalInsights';
 import { UserProfile } from '@/components/urotracker/UserProfile';
+import { DiaryScanner } from '@/components/urotracker/DiaryScanner';
 
 function AppContent() {
   const { currentView } = useDiary();
@@ -14,6 +15,8 @@ function AppContent() {
         return <Dashboard />;
       case 'entry':
         return <EntryForm />;
+      case 'scan':
+        return <DiaryScanner />;
       case 'insights':
         return <ClinicalInsights />;
       case 'profile':

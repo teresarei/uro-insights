@@ -2,6 +2,7 @@ import { useDiary } from '@/context/DiaryContext';
 import { StatCard } from './StatCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Droplets, 
   TrendingUp, 
@@ -11,7 +12,9 @@ import {
   Sun,
   GlassWater,
   PlusCircle,
-  ArrowRight
+  ArrowRight,
+  Clock,
+  Camera
 } from 'lucide-react';
 import {
   AreaChart,
@@ -27,11 +30,13 @@ import {
 import { format } from 'date-fns';
 
 export function Dashboard() {
-  const { entries, getStats, setCurrentView } = useDiary();
+  const { entries, getStats, setCurrentView, getEntriesLast48Hours, getVoidsPer24Hours } = useDiary();
   const stats = getStats();
+  const recentEntries = getEntriesLast48Hours();
+  const voidsPer24h = getVoidsPer24Hours();
 
-  // Prepare chart data
-  const dailyData = entries.map(entry => ({
+  // Prepare chart data - use 48-hour filtered data
+  const dailyData = recentEntries.map(entry => ({
     date: format(entry.date, 'EEE'),
     fullDate: format(entry.date, 'MMM d'),
     voids: entry.voids.length,
@@ -69,29 +74,56 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Welcome message */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">
-          Here's how your bladder rhythm looks
-        </h1>
-        <p className="text-muted-foreground">
-          {entries.length} days of data • Last updated {format(new Date(), 'MMM d, h:mm a')}
-        </p>
+      {/* Welcome message with 48-hour indicator */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-foreground">
+            Here's how your bladder rhythm looks
+          </h1>
+          <p className="text-muted-foreground">
+            Last updated {format(new Date(), 'MMM d, h:mm a')}
+          </p>
+        </div>
+        <Badge variant="secondary" className="flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" />
+          48-hour tracking
+        </Badge>
       </div>
+
+      {/* Voids per 24 hours highlight */}
+      <Card variant="highlight" className="border-primary/30">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Droplets className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Voids in last 24 hours</p>
+                <p className="text-3xl font-bold text-foreground">{voidsPer24h}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Normal range</p>
+              <p className="text-sm font-medium text-foreground">6-8 per day</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Quick stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Voids"
+          title="Total Voids (48h)"
           value={stats.totalVoids}
           subtitle={`~${stats.avgVoidsPerDay}/day`}
           icon={Droplets}
           variant="primary"
         />
         <StatCard
-          title="Total Intake"
+          title="Total Intake (48h)"
           value={`${(stats.totalIntake / 1000).toFixed(1)}L`}
-          subtitle={`${entries.length} day period`}
+          subtitle="48-hour period"
           icon={GlassWater}
           variant="info"
         />
@@ -258,23 +290,29 @@ export function Dashboard() {
       </Card>
 
       {/* CTA section */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="grid sm:grid-cols-3 gap-4">
         <Button 
           variant="hero" 
           size="lg" 
-          className="flex-1"
           onClick={() => setCurrentView('entry')}
         >
           <PlusCircle className="h-5 w-5" />
-          Log New Entry
+          Log Entry
+        </Button>
+        <Button 
+          variant="soft" 
+          size="lg" 
+          onClick={() => setCurrentView('scan')}
+        >
+          <Camera className="h-5 w-5" />
+          Scan Diary
         </Button>
         <Button 
           variant="outline" 
           size="lg" 
-          className="flex-1"
           onClick={() => setCurrentView('insights')}
         >
-          View Clinical Insights
+          View Insights
           <ArrowRight className="h-5 w-5" />
         </Button>
       </div>

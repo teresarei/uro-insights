@@ -56,4 +56,4 @@ export interface ClinicalPattern {
   recommendation: string;
 }
 
-export type ViewType = 'welcome' | 'dashboard' | 'entry' | 'insights' | 'profile';
+export type ViewType = 'welcome' | 'dashboard' | 'entry' | 'insights' | 'profile' | 'scan';

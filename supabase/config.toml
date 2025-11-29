@@ -1,0 +1,4 @@
+project_id = "onecgvvpabxvdvuetcws"
+
+[functions.parse-diary-image]
+verify_jwt = false

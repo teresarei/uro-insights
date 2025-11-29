@@ -1,4 +1,4 @@
-import { Droplets, LayoutDashboard, PlusCircle, Brain, User } from 'lucide-react';
+import { Droplets, LayoutDashboard, PlusCircle, Brain, User, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDiary } from '@/context/DiaryContext';
 import { ViewType } from '@/types/urotracker';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 const navItems: { view: ViewType; label: string; icon: React.ElementType }[] = [
   { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { view: 'entry', label: 'Log Entry', icon: PlusCircle },
+  { view: 'scan', label: 'Scan Diary', icon: Camera },
   { view: 'insights', label: 'Insights', icon: Brain },
   { view: 'profile', label: 'Profile', icon: User },
 ];
