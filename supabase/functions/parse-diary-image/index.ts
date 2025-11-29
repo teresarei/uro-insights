@@ -86,7 +86,7 @@ Be thorough but honest about uncertainty. Always output valid JSON.`;
             ]
           }
         ],
-        max_tokens: 4096,
+        max_tokens: 8192,
       }),
     });
 
@@ -120,10 +120,26 @@ Be thorough but honest about uncertainty. Always output valid JSON.`;
 
     // Extract JSON from the response (handle markdown code blocks)
     let jsonStr = content;
-    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    
+    // Try to match complete markdown block first
+    let jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
       jsonStr = jsonMatch[1].trim();
+    } else {
+      // Handle truncated response - extract JSON after opening ```json
+      const startMatch = content.match(/```(?:json)?\s*([\s\S]*)/);
+      if (startMatch) {
+        jsonStr = startMatch[1].trim();
+        // Try to find valid JSON by looking for the last complete structure
+        // Remove any trailing incomplete content
+        const lastBrace = jsonStr.lastIndexOf('}');
+        if (lastBrace !== -1) {
+          jsonStr = jsonStr.substring(0, lastBrace + 1);
+        }
+      }
     }
+    
+    console.log('Extracted JSON string length:', jsonStr.length);
 
     try {
       const parsedData = JSON.parse(jsonStr);
